@@ -13,7 +13,7 @@ const app = express();
 initializeDatabase();
 
 app.use(express.json());
-app.use(cors());
+app.use(cors({ origin: "*" }));
 app.use(authRoutes);
 app.use(taskRoutes);
 app.use(teamRoutes);
