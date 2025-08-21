@@ -17,31 +17,72 @@ router.get("/report/last-week", async (req, res) => {
   }
 });
 
-// Total work days pending
-router.get("/report/pending", async (req, res) => {
+// Total count of all tasks by status
+router.get("/report/total-work-done", async (req, res) => {
   try {
-    const tasks = await Task.find({ status: { $ne: "Completed" } });
-    const totalPendingDays = tasks.reduce(
-      (acc, task) => acc + (task.timeToComplete || 0),
-      0
-    );
-    res.json({ totalPendingDays });
+    const results = await Task.aggregate([
+      { $group: { _id: "$status", count: { $sum: 1 } } },
+    ]);
+    res.json(results);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// Closed tasks grouped by team, owner, or project
-router.get("/report/closed-tasks", async (req, res) => {
+// Closed tasks grouped by team (with team name)
+router.get("/report/closed-tasks-team", async (req, res) => {
   try {
-    const { groupBy } = req.query;
-    if (!["team", "owner", "project"].includes(groupBy)) {
-      return res.status(400).json({ error: "Invalid groupBy value" });
-    }
-    const groupField = "$" + groupBy;
     const results = await Task.aggregate([
       { $match: { status: "Completed" } },
-      { $group: { _id: groupField, totalClosed: { $sum: 1 } } },
+      { $group: { _id: "$team", totalClosed: { $sum: 1 } } },
+      {
+        $lookup: {
+          from: "teams",
+          localField: "_id",
+          foreignField: "_id",
+          as: "teamInfo",
+        },
+      },
+      { $unwind: { path: "$teamInfo", preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          _id: 0,
+          teamId: "$_id",
+          teamName: "$teamInfo.name",
+          totalClosed: 1,
+        },
+      },
+    ]);
+    res.json(results);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Closed tasks grouped by owner
+router.get("/report/closed-tasks-owner", async (req, res) => {
+  try {
+    const results = await Task.aggregate([
+      { $match: { status: "Completed" } },
+      { $unwind: "$owners" },
+      { $group: { _id: "$owners", totalClosed: { $sum: 1 } } },
+      {
+        $lookup: {
+          from: "users",
+          localField: "_id",
+          foreignField: "_id",
+          as: "ownerInfo",
+        },
+      },
+      { $unwind: { path: "$ownerInfo", preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          _id: 0,
+          ownerId: "$_id",
+          ownerName: "$ownerInfo.name",
+          totalClosed: 1,
+        },
+      },
     ]);
     res.json(results);
   } catch (error) {
