@@ -40,4 +40,17 @@ router.get("/projects", async (req, res) => {
   }
 });
 
+// ---------------- GET PROJECT BY ID ----------------
+router.get("/project/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const project = await Project.findById(id);
+    res.json(project);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error fetching project data", error: error.message });
+  }
+});
+
 module.exports = router;

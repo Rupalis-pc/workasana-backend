@@ -30,17 +30,23 @@ router.post("/tasks", verifyJWT, async (req, res) => {
   }
 });
 
-// GET TASKS WITH FILTERS
+// GET ALL TASKS (with filters + populate)
 router.get("/tasks", verifyJWT, async (req, res) => {
   try {
     const { team, owner, tags, project, status } = req.query;
+
     let query = {};
     if (team) query.team = team;
     if (project) query.project = project;
     if (status) query.status = status;
     if (owner) query.owners = { $in: [owner] };
     if (tags) query.tags = { $in: tags.split(",") };
-    const tasks = await Task.find(query);
+
+    const tasks = await Task.find(query)
+      .populate("owners", "name email")
+      .populate("project", "name")
+      .populate("team", "name");
+
     res.json({ count: tasks.length, tasks });
   } catch (error) {
     res

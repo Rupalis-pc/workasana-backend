@@ -10,7 +10,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret";
 router.post("/auth/signup", async (req, res) => {
   try {
     const { name, password, email } = req.body;
-    if (!name || !password || !email) {
+    if ( !password || !email) {
       return res.status(400).json({ message: "All fields are required." });
     }
     const existingUser = await User.findOne({ email });
@@ -64,6 +64,18 @@ router.get("/auth/me", require("../middleware/verifyJWT"), async (req, res) => {
     res
       .status(500)
       .json({ message: "Error fetching user.", error: error.message });
+  }
+});
+
+// GET ALL USERS
+router.get("/users", async (req, res) => {
+  try {
+    const users = await User.find().select("-password");
+    res.json(users);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error fetching users.", error: error.message });
   }
 });
 

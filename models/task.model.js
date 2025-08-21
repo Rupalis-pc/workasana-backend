@@ -21,6 +21,11 @@ const taskSchema = new mongoose.Schema({
   }, // Task status
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
 });
 
 // Automatically update the `updatedAt` field whenever the document is updated
